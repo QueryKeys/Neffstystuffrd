@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TradeAnalyzer Pro</title>
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<!-- ══ HEADER ══════════════════════════════════════════════════════════════ -->
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">▲</span>
+      <span class="logo-text">TradeAnalyzer <span class="logo-pro">PRO</span></span>
+    </div>
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="screener">Screener</button>
+      <button class="tab-btn" data-tab="chart">Chart</button>
+      <button class="tab-btn" data-tab="criteria">Criteria</button>
+    </nav>
+    <div class="header-actions">
+      <div class="market-time" id="market-time">--:-- ET</div>
+      <button class="btn-refresh" id="btn-refresh" title="Refresh screener">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ══ MARKET OVERVIEW STRIP ═══════════════════════════════════════════════ -->
+<div class="market-strip" id="market-strip">
+  <div class="strip-inner">
+    <div class="strip-item loading" data-sym="SPY"><span class="sym">SPY</span><span class="val">—</span><span class="chg">—</span></div>
+    <div class="strip-item loading" data-sym="QQQ"><span class="sym">QQQ</span><span class="val">—</span><span class="chg">—</span></div>
+    <div class="strip-item loading" data-sym="IWM"><span class="sym">IWM</span><span class="val">—</span><span class="chg">—</span></div>
+    <div class="strip-item loading" data-sym="GLD"><span class="sym">GLD</span><span class="val">—</span><span class="chg">—</span></div>
+    <div class="strip-item loading" data-sym="CL=F"><span class="sym">OIL</span><span class="val">—</span><span class="chg">—</span></div>
+    <div class="strip-item loading" data-sym="ES=F"><span class="sym">ES</span><span class="val">—</span><span class="chg">—</span></div>
+  </div>
+</div>
+
+<!-- ══ MAIN ════════════════════════════════════════════════════════════════ -->
+<main class="main">
+
+  <!-- ── SCREENER TAB ──────────────────────────────────────────────────── -->
+  <div class="tab-content active" id="tab-screener">
+    <div class="screener-header">
+      <div>
+        <h1 class="page-title">Market Screener</h1>
+        <p class="page-sub" id="screener-meta">Scanning market for opportunities…</p>
+      </div>
+      <div class="filters">
+        <select class="select" id="filter-type">
+          <option value="all">All Types</option>
+          <option value="stock">Stocks</option>
+          <option value="etf">ETFs</option>
+          <option value="futures">Futures</option>
+        </select>
+        <select class="select" id="filter-score">
+          <option value="0">All Scores</option>
+          <option value="80">80+ Strong</option>
+          <option value="70">70+ Good</option>
+          <option value="60">60+ Moderate</option>
+        </select>
+        <select class="select" id="filter-sector">
+          <option value="all">All Sectors</option>
+          <option value="tech">Technology</option>
+          <option value="finance">Finance</option>
+          <option value="health">Healthcare</option>
+          <option value="energy">Energy</option>
+          <option value="consumer">Consumer</option>
+          <option value="industrial">Industrial</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" id="loading-state">
+      <div class="spinner-wrap">
+        <div class="spinner"></div>
+        <p class="loading-text">Analyzing market data…</p>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <p class="progress-pct" id="progress-pct">0%</p>
+      </div>
+    </div>
+
+    <!-- Results Grid -->
+    <div class="results-grid hidden" id="results-grid"></div>
+
+    <!-- Empty State -->
+    <div class="empty-state hidden" id="empty-state">
+      <p>No assets meet the criteria with current filters.</p>
+    </div>
+  </div>
+
+  <!-- ── CHART TAB ─────────────────────────────────────────────────────── -->
+  <div class="tab-content hidden" id="tab-chart">
+    <div class="chart-header">
+      <div class="search-wrap">
+        <input class="search-input" id="chart-search" type="text" placeholder="Enter symbol (e.g. AAPL, ES=F)" />
+        <button class="btn-primary" id="btn-load-chart">Analyze</button>
+      </div>
+      <div class="range-btns">
+        <button class="range-btn active" data-range="1mo">1M</button>
+        <button class="range-btn" data-range="3mo">3M</button>
+        <button class="range-btn" data-range="6mo">6M</button>
+        <button class="range-btn" data-range="1y">1Y</button>
+      </div>
+    </div>
+
+    <div class="chart-layout" id="chart-layout">
+      <div class="chart-placeholder" id="chart-placeholder">
+        <span>Enter a symbol above to view chart analysis</span>
+      </div>
+
+      <!-- Analysis Panel (hidden until loaded) -->
+      <div class="analysis-panel hidden" id="analysis-panel">
+        <!-- Score Card -->
+        <div class="score-card" id="score-card">
+          <div class="score-header">
+            <div>
+              <div class="score-symbol" id="score-symbol">—</div>
+              <div class="score-name" id="score-name">—</div>
+            </div>
+            <div class="score-price-wrap">
+              <div class="score-price" id="score-price">—</div>
+              <div class="score-change" id="score-change">—</div>
+            </div>
+          </div>
+          <div class="score-bars">
+            <div class="score-row">
+              <span class="score-label">Technical</span>
+              <div class="score-bar"><div class="score-bar-fill tech" id="bar-tech"></div></div>
+              <span class="score-num" id="num-tech">—</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">Fundamental</span>
+              <div class="score-bar"><div class="score-bar-fill fund" id="bar-fund"></div></div>
+              <span class="score-num" id="num-fund">—</span>
+            </div>
+            <div class="score-row combined-row">
+              <span class="score-label">Combined</span>
+              <div class="score-bar"><div class="score-bar-fill combined" id="bar-combined"></div></div>
+              <span class="score-num large" id="num-combined">—</span>
+            </div>
+          </div>
+          <div class="verdict" id="verdict">—</div>
+        </div>
+
+        <!-- Indicators -->
+        <div class="indicators-card" id="indicators-card">
+          <h3 class="card-title">Key Indicators</h3>
+          <div class="indicator-grid" id="indicator-grid"></div>
+        </div>
+
+        <!-- Fundamentals -->
+        <div class="fundamentals-card hidden" id="fundamentals-card">
+          <h3 class="card-title">Fundamentals</h3>
+          <div class="fund-grid" id="fund-grid"></div>
+        </div>
+
+        <!-- Signals -->
+        <div class="signals-card" id="signals-card">
+          <h3 class="card-title">Signals</h3>
+          <div class="signals-list" id="signals-list"></div>
+        </div>
+      </div>
+
+      <!-- Charts Container -->
+      <div class="charts-container hidden" id="charts-container">
+        <div class="chart-pane main-pane">
+          <div class="pane-label">Price · SMA50 · SMA200 · BB</div>
+          <div id="chart-main"></div>
+        </div>
+        <div class="chart-pane vol-pane">
+          <div class="pane-label">Volume</div>
+          <div id="chart-volume"></div>
+        </div>
+        <div class="chart-pane rsi-pane">
+          <div class="pane-label">RSI (14)</div>
+          <div id="chart-rsi"></div>
+        </div>
+        <div class="chart-pane macd-pane">
+          <div class="pane-label">MACD (12,26,9)</div>
+          <div id="chart-macd"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CRITERIA TAB ──────────────────────────────────────────────────── -->
+  <div class="tab-content hidden" id="tab-criteria">
+    <div class="criteria-page">
+      <h1 class="page-title">Screening Criteria</h1>
+      <p class="page-sub">How TradeAnalyzer Pro scores and selects opportunities</p>
+
+      <div class="criteria-grid">
+
+        <div class="criteria-section">
+          <div class="criteria-header tech-header">
+            <span class="criteria-icon">📈</span>
+            <div>
+              <h2>Technical Score <span class="weight-badge">60% weight (stocks) · 100% (ETF/Futures)</span></h2>
+            </div>
+          </div>
+          <div class="criteria-items">
+            <div class="criteria-item">
+              <div class="criteria-name">Trend Strength <span class="pts">25 pts</span></div>
+              <ul>
+                <li><b>+10</b> Price above SMA50 (short-term bullish)</li>
+                <li><b>+15</b> Golden Cross: SMA50 > SMA200 (long-term bullish)</li>
+              </ul>
+            </div>
+            <div class="criteria-item">
+              <div class="criteria-name">Momentum Quality <span class="pts">25 pts</span></div>
+              <ul>
+                <li><b>+15</b> RSI 40–65 (building momentum, not overbought)</li>
+                <li><b>+8</b> RSI &lt;30 (oversold, potential reversal)</li>
+                <li><b>+10</b> MACD histogram positive and growing</li>
+              </ul>
+            </div>
+            <div class="criteria-item">
+              <div class="criteria-name">Volume Conviction <span class="pts">20 pts</span></div>
+              <ul>
+                <li><b>+20</b> Volume ≥ 2× 20-day average (strong buying interest)</li>
+                <li><b>+15</b> Volume ≥ 1.5× average</li>
+                <li><b>+8</b> Volume at average</li>
+              </ul>
+            </div>
+            <div class="criteria-item">
+              <div class="criteria-name">ATR Volatility <span class="pts">15 pts</span></div>
+              <ul>
+                <li><b>+15</b> ATR 1.5%–4% of price (ideal tradeable range)</li>
+                <li><b>+8</b> ATR 1%–1.5% (low vol, steady)</li>
+                <li><b>+7</b> ATR 4%–7% (high vol, elevated risk)</li>
+              </ul>
+            </div>
+            <div class="criteria-item">
+              <div class="criteria-name">Bollinger Band Position <span class="pts">15 pts</span></div>
+              <ul>
+                <li><b>+15</b> Price 50%–85% of BB range (buy zone)</li>
+                <li><b>+8</b> Price near BB lower band (potential bounce)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="criteria-section">
+          <div class="criteria-header fund-header">
+            <span class="criteria-icon">📊</span>
+            <div>
+              <h2>Fundamental Score <span class="weight-badge">40% weight (stocks only)</span></h2>
+            </div>
+          </div>
+          <div class="criteria-items">
+            <div class="criteria-item">
+              <div class="criteria-name">Valuation (P/E) <span class="pts">20 pts</span></div>
+              <ul>
+                <li><b>+20</b> P/E &lt; 20 (undervalued)</li>
+                <li><b>+15</b> P/E 20–30 (fair value)</li>
+                <li><b>+8</b> P/E 30–50 (growth premium)</li>
+                <li><b>0</b> P/E &gt; 50 or negative</li>
+              </ul>
+            </div>
+            <div class="criteria-item">
+              <div class="criteria-name">Revenue Growth <span class="pts">25 pts</span></div>
+              <ul>
+                <li><b>+25</b> Growth &gt; 15% YoY</li>
+                <li><b>+15</b> Growth 5%–15%</li>
+                <li><b>+7</b> Growth 0%–5%</li>
+                <li><b>0</b> Declining revenue</li>
+              </ul>
+            </div>
+            <div class="criteria-item">
+              <div class="criteria-name">Profit Margin <span class="pts">25 pts</span></div>
+              <ul>
+                <li><b>+25</b> Margin &gt; 20%</li>
+                <li><b>+18</b> Margin 10%–20%</li>
+                <li><b>+8</b> Margin 3%–10%</li>
+                <li><b>0</b> Negative margins</li>
+              </ul>
+            </div>
+            <div class="criteria-item">
+              <div class="criteria-name">Debt/Equity <span class="pts">15 pts</span></div>
+              <ul>
+                <li><b>+15</b> D/E &lt; 0.5 (low debt)</li>
+                <li><b>+10</b> D/E 0.5–1.5</li>
+                <li><b>+4</b> D/E 1.5–3</li>
+                <li><b>0</b> D/E &gt; 3</li>
+              </ul>
+            </div>
+            <div class="criteria-item">
+              <div class="criteria-name">Market Cap / Liquidity <span class="pts">15 pts</span></div>
+              <ul>
+                <li><b>+15</b> Mega cap &gt; $50B</li>
+                <li><b>+12</b> Large cap $10B–$50B</li>
+                <li><b>+8</b> Mid cap $2B–$10B</li>
+                <li><b>+3</b> Small cap &lt; $2B</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="criteria-section verdict-section">
+          <h2>Score Interpretation</h2>
+          <div class="verdict-table">
+            <div class="verdict-row"><span class="verdict-badge strong">80–100</span><span>Strong opportunity — high conviction setup</span></div>
+            <div class="verdict-row"><span class="verdict-badge good">70–79</span><span>Good setup — worth watching closely</span></div>
+            <div class="verdict-row"><span class="verdict-badge watch">60–69</span><span>Moderate — potential if sector confirms</span></div>
+            <div class="verdict-row"><span class="verdict-badge weak">55–59</span><span>Borderline — watch but do not trade yet</span></div>
+            <div class="verdict-row"><span class="verdict-badge none">&lt;55</span><span>Not shown — does not meet criteria</span></div>
+          </div>
+          <div class="disclaimer">
+            <strong>Disclaimer:</strong> This tool is for educational and informational purposes only. Not financial advice.
+            Always do your own research and consult a licensed financial advisor before trading.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ══ ASSET MODAL ══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modal-overlay">
+  <div class="modal" id="modal">
+    <button class="modal-close" id="modal-close">✕</button>
+    <div class="modal-content" id="modal-content">
+      <div class="spinner-wrap"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/analysis.js"></script>
+<script src="js/api.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
